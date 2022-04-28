@@ -20,19 +20,20 @@ struct AccelerometerViewDuo: View {
     
     
     @State private var bpm: Double = 256
-    @State private var runSize = 50
     @State private var runOpaciryDown: Bool = false
     @State private var runOpaciryUp: Bool = false
     @State private var runOpacity: Double = 0
-    @State private var gameTime: Double = 45
+    @State private var gameTimer: Double = 0
     @State private var timerColor = Color.black
     
     //SOUNDS
     @State private var music: Bool = true
     @State private var playMusic: Bool = false
+    @StateObject private var startSound = SubsonicPlayer(sound: "gameStart.mp3")
     @StateObject private var boublesSound = SubsonicPlayer(sound: "bubbles.mp3")
     @StateObject private var pouringSound = SubsonicPlayer(sound: "bestPouring.mp3")
     @StateObject private var bulbSound = SubsonicPlayer(sound: "bulb.mp3")
+    @StateObject private var missSound = SubsonicPlayer(sound: "beerMiss.mp3")
     //
     
     
@@ -44,10 +45,12 @@ struct AccelerometerViewDuo: View {
     @State private var pouring:Bool = false
     @State private var countdown:Bool = false
     @State private var countdownValue:Double = 3.5
-    @State private var gameTimer:Int = 0
+    @State private var countdownTimer:Int = 0
     @State private var running: Bool = false
     @State private var finish: Bool = false
     
+    @State private var pourValue:Double = 0.5 //время разливания пива
+    @State private var pouringOut:Bool = false
     @State private var pourOut:Bool = false
     @State private var missedBeer:Int = 0
     @State private var missedBeerValue:Double = 1000
@@ -98,11 +101,19 @@ struct AccelerometerViewDuo: View {
     let deadValue:Double = 0
     let updateFrequency:Double = 0.02
     let timer = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
-    let waterDelay = 6
+    let waterDelay = 5
 
     func MyMotion(){
         print("\(runOpacity)")
         
+        if(pourValue <= 0){
+            pouringOut = false
+            pourValue = 0.5
+        }
+        
+        if(pouringOut){
+            self.pourValue -= 0.02
+        }
         
         
         self.missedBeer = self.missedBeerValue < 250 ? Int((1-(self.missedBeerValue/250))*100) : 0
@@ -120,7 +131,7 @@ struct AccelerometerViewDuo: View {
             }
         }
         
-        self.beerOpacity = 150/(abs(accelY) + (missedBeerValue/10))
+        self.beerOpacity = 140/(abs(accelY) + (Double(missedBeer)))
         
         self.bubblesHeight = (leftBeerY > rightBeerY ? leftBeerY : rightBeerY)
         self.bubblesWidth = 185
@@ -220,6 +231,7 @@ struct AccelerometerViewDuo: View {
             self.leftBeerY = missedBeerValue + noBeerY
             self.centerBeerY = missedBeerValue + noBeerY
             self.rightBeerY = missedBeerValue + noBeerY
+            self.beerOpacity = 1
         }else{
             self.leftBeerY = accelX + noBeerY + missedBeerValue + accelY
             self.centerBeerY = (abs(gyroZ)/6) + abs(accelX ) + noBeerY + missedBeerValue + accelY
@@ -239,8 +251,9 @@ struct AccelerometerViewDuo: View {
             if(missedBeerValue > 250 - deadValue || (accelY < -195) ){
                 if(missedBeerValue < 1000 ){
                     self.missedBeerValue += 10 + gyroZ/20
+                   
                 }
-                if(missedBeerValue>250){
+                if(missedBeerValue > 250 && !pouringOut){
                     finishGame()
                 }
             }
@@ -248,6 +261,10 @@ struct AccelerometerViewDuo: View {
 
         if(leftBeerY < 0 || rightBeerY < 0){
             missedBeerValue += 0.03 * (abs(accelY * 3) + abs(accelX))
+            missSound.play()
+            if(!pouringOut){
+                self.pouringOut = true
+            }
         }
         
         if(pouring){
@@ -260,10 +277,10 @@ struct AccelerometerViewDuo: View {
         }
 
         if(running){
-            if(gameTime > 0){
-                self.gameTime -= 0.02
-                if(gameTime < 10){
-                    if(gameTime < 5){
+            if(gameTimer > 0.5){
+                self.gameTimer -= 0.02
+                if(gameTimer < 10){
+                    if(gameTimer < 5){
                         timerColor = Color.red
                     }else{
                         timerColor = Color.orange
@@ -307,22 +324,25 @@ struct AccelerometerViewDuo: View {
         self.countdown = true
         self.countdownValue = 3.5
         self.missedBeerValue = 300
-        self.gameTime = 44
+        self.gameTimer = 45
         
+        startSound.play()
         pouringSound.play()
         bulbSound.play()
         boublesSound.play()
     }
     
     
-    func finishGame(){
+    func finishGame(failed: Bool? = nil){
+            
         motionsRecording = false
         self.finish = true
         self.rules = false
         self.running = false
         self.pouring = false
         self.countdown = false
-        self.gameTimer = 0
+        self.countdownTimer = 0
+        self.pouringOut = false
         
         self.playMusic = false
         pouringSound.stop()
@@ -347,7 +367,7 @@ var body: some View {
                            path.addQuadCurve(to: CGPoint(x: 185, y: rightBeerY), control: CGPoint(x: 120 - (gyroZ/10), y: centerBeerY))
                           path.addLine(to: CGPoint(x:185, y: leftBottomY))
                            path.addLine(to: CGPoint(x:0, y: rightBottomY))
-                       }.fill(LinearGradient(colors: [Color(UIColor(red: 0.84, green: 0.47, blue: 0.00,alpha: beerOpacity)),Color(UIColor(red: 1.00, green: 0.73, blue: 0.00, alpha: beerOpacity/1.5))], startPoint: .top, endPoint: .bottom))
+                       }.fill(LinearGradient(colors: [Color(UIColor(red: 0.84, green: 0.47, blue: 0.00,alpha: beerOpacity)),Color(UIColor(red: 1.00, green: 0.73, blue: 0.00, alpha: beerOpacity))], startPoint: .top, endPoint: .bottom))
                    }
 
                    Path() { path in //верх
@@ -375,7 +395,7 @@ var body: some View {
                    
                }
                     .frame(width: 187, height:255, alignment: .center)
-                    
+                    .sound("pouringOut.mp3", isPlaying: $pouringOut)
                
                    .alert("Pour some more?", isPresented: $alertStatus) {
                        Button("YES!", role: .cancel) {
@@ -393,13 +413,16 @@ var body: some View {
                    if(running){
                        Image("RUN").offset(y: -250).opacity(runOpacity)
                        
-                       Text("\(gameTime, specifier: "%.0f")s")
+                       Text("\(gameTimer, specifier: "%.0f")s")
                            .font(.title)
                            .fontWeight(.semibold)
                            .offset(y:180)
                            .foregroundColor(timerColor)
                        
-                       Button(action: finishGame){
+                       Button(action: {
+                           finishGame(failed: true)
+                       } ){
+                           
                            Image("finish")
                        }.offset(y:250)
                    }
@@ -415,7 +438,7 @@ var body: some View {
                    }
                    
                }.padding(.vertical,20)
-                   .sound("running45s.mp3", isPlaying: $playMusic, volume: Double(missedBeer)/100)
+                   .sound("running45s.mp3", isPlaying: $playMusic, volume: 1)
            
                
            
@@ -453,7 +476,7 @@ var body: some View {
                            if(missedBeer >= 80){
                                Text("Wow!").foregroundColor(Color.black)
                                    .font(.system(size: 32))
-                               Text("You have 80% of beer left! Your’re better than 80% of people in the world!!").foregroundColor(Color.black)
+                               Text("You have \(missedBeer)% of beer left! Your’re better than \(missedBeer)% of people in the world!!").foregroundColor(Color.black)
                                    .font(.system(size: 16))
                                    .multilineTextAlignment(.center)
                                    .frame(width: screenWidth-40).padding(.vertical, 10)
