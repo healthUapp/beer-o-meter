@@ -8,12 +8,33 @@
 import SwiftUI
 import CoreMotion
 import CoreGraphics
+import Subsonic
+
 
 struct AccelerometerViewDuo: View {
     let screenHeight = UIScreen.screenHeight
     let screenWidth = UIScreen.screenWidth
     
     @Environment(\.presentationMode) private var presentationMode
+    
+    
+    
+    @State private var bpm: Double = 256
+    @State private var runSize = 50
+    @State private var runOpaciryDown: Bool = false
+    @State private var runOpaciryUp: Bool = false
+    @State private var runOpacity: Double = 0
+    @State private var gameTime: Double = 45
+    @State private var timerColor = Color.black
+    
+    //SOUNDS
+    @State private var music: Bool = true
+    @State private var playMusic: Bool = false
+    @StateObject private var boublesSound = SubsonicPlayer(sound: "bubbles.mp3")
+    @StateObject private var pouringSound = SubsonicPlayer(sound: "bestPouring.mp3")
+    @StateObject private var bulbSound = SubsonicPlayer(sound: "bulb.mp3")
+    //
+    
     
     //Состояние записи работы акселерометра и гироскопа
     @State private var motionsRecording: Bool = false
@@ -28,7 +49,8 @@ struct AccelerometerViewDuo: View {
     @State private var finish: Bool = false
     
     @State private var pourOut:Bool = false
-    @State private var missedBeer:Double = 1000
+    @State private var missedBeer:Int = 0
+    @State private var missedBeerValue:Double = 1000
 
     @State private var missedFoam:Double = 0 //позже добавлю
     @State private var foamHeight:Double = 50
@@ -79,6 +101,11 @@ struct AccelerometerViewDuo: View {
     let waterDelay = 6
 
     func MyMotion(){
+        print("\(runOpacity)")
+        
+        
+        
+        self.missedBeer = self.missedBeerValue < 250 ? Int((1-(self.missedBeerValue/250))*100) : 0
         
         if(self.countdown){
             self.countdownValue -= 0.02
@@ -86,10 +113,14 @@ struct AccelerometerViewDuo: View {
             if(self.countdownValue <= 0.5){
                 self.countdown = false
                 self.running = true
+                
+                if(music){
+                    self.playMusic = true
+                }
             }
         }
         
-        self.beerOpacity = 150/(abs(accelY) + (missedBeer/10))
+        self.beerOpacity = 150/(abs(accelY) + (missedBeerValue/10))
         
         self.bubblesHeight = (leftBeerY > rightBeerY ? leftBeerY : rightBeerY)
         self.bubblesWidth = 185
@@ -186,49 +217,84 @@ struct AccelerometerViewDuo: View {
         }
         
         if(pouring){
-            self.leftBeerY = missedBeer + noBeerY
-            self.centerBeerY = missedBeer + noBeerY
-            self.rightBeerY = missedBeer + noBeerY
+            self.leftBeerY = missedBeerValue + noBeerY
+            self.centerBeerY = missedBeerValue + noBeerY
+            self.rightBeerY = missedBeerValue + noBeerY
         }else{
-            self.leftBeerY = accelX + noBeerY + missedBeer + accelY
-            self.centerBeerY = (abs(gyroZ)/6) + abs(accelX ) + noBeerY + missedBeer + accelY
-            self.rightBeerY = -accelX  + noBeerY + missedBeer + accelY
+            self.leftBeerY = accelX + noBeerY + missedBeerValue + accelY
+            self.centerBeerY = (abs(gyroZ)/6) + abs(accelX ) + noBeerY + missedBeerValue + accelY
+            self.rightBeerY = -accelX  + noBeerY + missedBeerValue + accelY
         }
         
         
         
-        self.foamHeight = 40 - (missedBeer/15)
+        self.foamHeight = 40 - (missedBeerValue/15)
 
         if(pourOut){
-            self.missedBeer += 50
-            self.pourOut = missedBeer > 250 ? false : true
+            self.missedBeerValue += 50
+            self.pourOut = missedBeerValue > 250 ? false : true
         }
         
         if(!pouring){
-            if(missedBeer > 250 - deadValue || (accelY < -195) ){
-                if(missedBeer < 1000 ){
-                    self.missedBeer += 10 + gyroZ/20
+            if(missedBeerValue > 250 - deadValue || (accelY < -195) ){
+                if(missedBeerValue < 1000 ){
+                    self.missedBeerValue += 10 + gyroZ/20
                 }
-                if(missedBeer>500){
+                if(missedBeerValue>250){
                     finishGame()
                 }
             }
         }
 
         if(leftBeerY < 0 || rightBeerY < 0){
-            missedBeer += 0.03 * (abs(accelY * 3) + abs(accelX))
+            missedBeerValue += 0.03 * (abs(accelY * 3) + abs(accelX))
         }
         
         if(pouring){
-            missedBeer -= 2
+            missedBeerValue -= 2
             
-            if(missedBeer < 1){
+            if(missedBeerValue < 1){
                 self.alertStatus = false
                 self.pouring = false
             }
         }
 
-
+        if(running){
+            if(gameTime > 0){
+                self.gameTime -= 0.02
+                if(gameTime < 10){
+                    if(gameTime < 5){
+                        timerColor = Color.red
+                    }else{
+                        timerColor = Color.orange
+                    }
+                }else{
+                    timerColor = Color.black
+                }
+            }else{
+                finishGame()
+            }
+            
+            if(self.runOpacity >= 1){
+                self.runOpaciryUp = false
+                self.runOpaciryDown = true
+                runOpacity -= (bpm/60)/50
+            }
+            if(self.runOpacity <= 0){
+                self.runOpaciryDown = false
+                self.runOpaciryUp = true
+                
+                self.runOpacity += (bpm/60)/50
+            }
+            
+            if(self.runOpaciryUp){
+                self.runOpacity += (bpm/60)/50
+            }
+            
+            if(self.runOpaciryDown){
+                self.runOpacity -= (bpm/60)/50
+            }
+        }
         
     }
     
@@ -240,7 +306,12 @@ struct AccelerometerViewDuo: View {
         self.pouring = true
         self.countdown = true
         self.countdownValue = 3.5
-        self.missedBeer = 300
+        self.missedBeerValue = 300
+        self.gameTime = 44
+        
+        pouringSound.play()
+        bulbSound.play()
+        boublesSound.play()
     }
     
     
@@ -251,13 +322,19 @@ struct AccelerometerViewDuo: View {
         self.running = false
         self.pouring = false
         self.countdown = false
+        self.gameTimer = 0
+        
+        self.playMusic = false
+        pouringSound.stop()
+        bulbSound.stop()
+        boublesSound.stop()
     }
     
     func goToMainMenu(){
         presentationMode.wrappedValue.dismiss()
     }
-  
 
+    
     
   
 var body: some View {
@@ -296,11 +373,13 @@ var body: some View {
                        path.closeSubpath()
                    }.fill(Color.white)
                    
-               }.frame(width: 187, height:255, alignment: .center)
+               }
+                    .frame(width: 187, height:255, alignment: .center)
+                    
                
                    .alert("Pour some more?", isPresented: $alertStatus) {
                        Button("YES!", role: .cancel) {
-                           self.missedBeer = 300
+                           self.missedBeerValue = 300
                            self.alertStatus = false
                            self.pouring = true
                        }
@@ -312,7 +391,13 @@ var body: some View {
                
                ZStack{
                    if(running){
-                       Image("RUN").offset(y: -250)
+                       Image("RUN").offset(y: -250).opacity(runOpacity)
+                       
+                       Text("\(gameTime, specifier: "%.0f")s")
+                           .font(.title)
+                           .fontWeight(.semibold)
+                           .offset(y:180)
+                           .foregroundColor(timerColor)
                        
                        Button(action: finishGame){
                            Image("finish")
@@ -323,13 +408,14 @@ var body: some View {
                        Text("Pouring" + self.dots).font(.title).fontWeight(.semibold).padding(.vertical, 20)
                            .offset(y:-180)
                    }else{
-                       Text("\(self.missedBeer < 250 ? Int((1-(self.missedBeer/250))*100) :0)%")
+                       Text("\(missedBeer)%")
                            .font(.largeTitle)
                            .fontWeight(.semibold)
                            .offset(y:-180)
                    }
                    
                }.padding(.vertical,20)
+                   .sound("running45s.mp3", isPlaying: $playMusic, volume: Double(missedBeer)/100)
            
                
            
@@ -364,7 +450,7 @@ var body: some View {
                if(finish){ //Финиш
                    ZStack(){
                        VStack(){
-                           if(Int((1-(self.missedBeer/250))*100) >= 80){
+                           if(missedBeer >= 80){
                                Text("Wow!").foregroundColor(Color.black)
                                    .font(.system(size: 32))
                                Text("You have 80% of beer left! Your’re better than 80% of people in the world!!").foregroundColor(Color.black)
@@ -372,8 +458,7 @@ var body: some View {
                                    .multilineTextAlignment(.center)
                                    .frame(width: screenWidth-40).padding(.vertical, 10)
                            }
-                           if(Int((1-(self.missedBeer/250))*100) >= 50 &&
-                              Int((1-(self.missedBeer/250))*100) < 80){
+                           if(missedBeer >= 50 && missedBeer < 80){
                                Text("Yeah!").foregroundColor(Color.black)
                                    .font(.system(size: 32))
                                Text("You’re almost there! Try harder and you’ll break the record!").foregroundColor(Color.black)
@@ -381,7 +466,7 @@ var body: some View {
                                    .multilineTextAlignment(.center)
                                    .frame(width: screenWidth-40).padding(.vertical, 10)
                            }
-                           if(Int((1-(self.missedBeer/250))*100) < 50){
+                           if(missedBeer < 50){
                                Text("Fuh!").foregroundColor(Color.black)
                                    .font(.system(size: 32))
                                Text("That was hard but you can do it better! Try again!").foregroundColor(Color.black)
@@ -395,6 +480,8 @@ var body: some View {
                                Image("tryAgain")
                                
                            }
+                           
+                           
                            Button(action: goToMainMenu){
                                Text("Main menu").foregroundColor(Color(UIColor(red: 0.35, green: 0.46, blue: 0.98, alpha: 1.00)))
                            }

@@ -11,8 +11,10 @@
 		CEEF4A9F281AC35300B11E3B /* InfoPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEF4A9E281AC35300B11E3B /* InfoPage.swift */; };
 		CEEF4AA1281AC35B00B11E3B /* ImpactApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEF4AA0281AC35B00B11E3B /* ImpactApp.swift */; };
 		CEEF4AA3281AC36D00B11E3B /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEF4AA2281AC36D00B11E3B /* WebView.swift */; };
-		CEEF4AA6281AE5E400B11E3B /* boubles.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CEEF4AA5281AE5E400B11E3B /* boubles.mp3 */; };
-		CEEF4AA8281AE64200B11E3B /* pouring.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CEEF4AA7281AE64200B11E3B /* pouring.mp3 */; };
+		CEEF4AAE281B1CC000B11E3B /* menu.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CEEF4AAD281B1CC000B11E3B /* menu.mp3 */; };
+		CEEF4AB0281B1CD000B11E3B /* running.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CEEF4AAF281B1CD000B11E3B /* running.mp3 */; };
+		CEEF4ABB281B286E00B11E3B /* Subsonic in Frameworks */ = {isa = PBXBuildFile; productRef = CEEF4ABA281B286E00B11E3B /* Subsonic */; };
+		CEEF4ABD281B2FB500B11E3B /* running45s.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CEEF4ABC281B2FB500B11E3B /* running45s.mp3 */; };
 		D13727B12817E5D900A64C70 /* DuoGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13727B02817E5D900A64C70 /* DuoGame.swift */; };
 		D13727B32817E5DB00A64C70 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D13727B22817E5DB00A64C70 /* Assets.xcassets */; };
 		D13727B62817E5DB00A64C70 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D13727B52817E5DB00A64C70 /* Preview Assets.xcassets */; };
@@ -22,14 +24,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CEAFB5BA281B49CF002BCD4D /* bubbles.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bubbles.mp3; sourceTree = "<group>"; };
+		CEAFB5BB281B49CF002BCD4D /* bestPouring.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bestPouring.mp3; sourceTree = "<group>"; };
+		CEAFB5BC281B49CF002BCD4D /* bulb.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = bulb.mp3; sourceTree = "<group>"; };
 		CEEF4A9C281AC34100B11E3B /* InfoPageRus.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = InfoPageRus.swift; path = ../../../InfoPageRus.swift; sourceTree = "<group>"; };
 		CEEF4A9E281AC35300B11E3B /* InfoPage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = InfoPage.swift; path = ../../../InfoPage.swift; sourceTree = "<group>"; };
 		CEEF4AA0281AC35B00B11E3B /* ImpactApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ImpactApp.swift; path = ../../../ImpactApp.swift; sourceTree = "<group>"; };
 		CEEF4AA2281AC36D00B11E3B /* WebView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WebView.swift; path = ../../../WebView.swift; sourceTree = "<group>"; };
-		CEEF4AA5281AE5E400B11E3B /* boubles.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = boubles.mp3; path = "../../../../../Downloads/жидкое золото бурчит  2/boubles.mp3"; sourceTree = "<group>"; };
-		CEEF4AA7281AE64200B11E3B /* pouring.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = pouring.mp3; path = "../../../../../Downloads/жидкое золото бурчит  2/pouring.mp3"; sourceTree = "<group>"; };
-		CEEF4AAB281B10A200B11E3B /* pouring.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = pouring.mp3; sourceTree = "<group>"; };
-		CEEF4AAC281B10A200B11E3B /* boubles.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = boubles.mp3; sourceTree = "<group>"; };
+		CEEF4AAD281B1CC000B11E3B /* menu.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = menu.mp3; path = ../../../../../../Downloads/menu.mp3; sourceTree = "<group>"; };
+		CEEF4AAF281B1CD000B11E3B /* running.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = running.mp3; path = ../../../../../../Downloads/running.mp3; sourceTree = "<group>"; };
+		CEEF4ABC281B2FB500B11E3B /* running45s.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = running45s.mp3; path = ../../../../../../Documents/running45s.mp3; sourceTree = "<group>"; };
 		D13727AB2817E5D900A64C70 /* Beer-o-Meter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Beer-o-Meter.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D13727B02817E5D900A64C70 /* DuoGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuoGame.swift; sourceTree = "<group>"; };
 		D13727B22817E5DB00A64C70 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -44,6 +48,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEEF4ABB281B286E00B11E3B /* Subsonic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,8 +60,6 @@
 			children = (
 				CEEF4AAA281B109700B11E3B /* music */,
 				CEEF4AA9281B108A00B11E3B /* beer */,
-				CEEF4AA7281AE64200B11E3B /* pouring.mp3 */,
-				CEEF4AA5281AE5E400B11E3B /* boubles.mp3 */,
 			);
 			path = sounds;
 			sourceTree = "<group>";
@@ -64,8 +67,9 @@
 		CEEF4AA9281B108A00B11E3B /* beer */ = {
 			isa = PBXGroup;
 			children = (
-				CEEF4AAB281B10A200B11E3B /* pouring.mp3 */,
-				CEEF4AAC281B10A200B11E3B /* boubles.mp3 */,
+				CEAFB5BC281B49CF002BCD4D /* bulb.mp3 */,
+				CEAFB5BB281B49CF002BCD4D /* bestPouring.mp3 */,
+				CEAFB5BA281B49CF002BCD4D /* bubbles.mp3 */,
 			);
 			path = beer;
 			sourceTree = "<group>";
@@ -73,6 +77,9 @@
 		CEEF4AAA281B109700B11E3B /* music */ = {
 			isa = PBXGroup;
 			children = (
+				CEEF4ABC281B2FB500B11E3B /* running45s.mp3 */,
+				CEEF4AAF281B1CD000B11E3B /* running.mp3 */,
+				CEEF4AAD281B1CC000B11E3B /* menu.mp3 */,
 			);
 			path = music;
 			sourceTree = "<group>";
@@ -135,6 +142,9 @@
 			dependencies = (
 			);
 			name = "Impact-development";
+			packageProductDependencies = (
+				CEEF4ABA281B286E00B11E3B /* Subsonic */,
+			);
 			productName = Impact;
 			productReference = D13727AB2817E5D900A64C70 /* Beer-o-Meter.app */;
 			productType = "com.apple.product-type.application";
@@ -164,6 +174,9 @@
 				Base,
 			);
 			mainGroup = D13727A22817E5D900A64C70;
+			packageReferences = (
+				CEEF4AB9281B286E00B11E3B /* XCRemoteSwiftPackageReference "Subsonic" */,
+			);
 			productRefGroup = D13727AC2817E5D900A64C70 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -179,10 +192,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				D18A6151281821DA00A4233D /* Launch Screen.storyboard in Resources */,
-				CEEF4AA6281AE5E400B11E3B /* boubles.mp3 in Resources */,
 				D13727B62817E5DB00A64C70 /* Preview Assets.xcassets in Resources */,
+				CEEF4AB0281B1CD000B11E3B /* running.mp3 in Resources */,
 				D13727B32817E5DB00A64C70 /* Assets.xcassets in Resources */,
-				CEEF4AA8281AE64200B11E3B /* pouring.mp3 in Resources */,
+				CEEF4ABD281B2FB500B11E3B /* running45s.mp3 in Resources */,
+				CEEF4AAE281B1CC000B11E3B /* menu.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +424,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CEEF4AB9281B286E00B11E3B /* XCRemoteSwiftPackageReference "Subsonic" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/twostraws/Subsonic";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CEEF4ABA281B286E00B11E3B /* Subsonic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEEF4AB9281B286E00B11E3B /* XCRemoteSwiftPackageReference "Subsonic" */;
+			productName = Subsonic;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D13727A32817E5D900A64C70 /* Project object */;
 }
