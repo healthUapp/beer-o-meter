@@ -13,9 +13,14 @@ struct AccelerometerViewDuo: View {
     let screenHeight = UIScreen.screenHeight
     let screenWidth = UIScreen.screenWidth
     
+    
+    
     //Состояние записи работы акселерометра и гироскопа
     @State private var motionsRecording: Bool = true
     @State private var alertStatus: Bool = false
+    @State private var gameProsecc: Bool = true
+    
+    
     
     @State private var pourBeer:Bool = false
     @State private var pourOut:Bool = false
