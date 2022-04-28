@@ -18,7 +18,7 @@ extension UIScreen{//Размеры экрана
    static let screenSize = UIScreen.main.bounds.size
 }
 
-
+ 
 extension UIColor {
     var rgba: (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) {
         var red: CGFloat = 0
@@ -32,12 +32,7 @@ extension UIColor {
 }
 
 
-
-
-
 struct StartPage: View {
-    
-    @State var alertStatus: Bool = false
     
     
     let screenHeight = UIScreen.screenHeight
@@ -45,13 +40,14 @@ struct StartPage: View {
     
     var body: some View {
         NavigationView{
-            VStack{
+            VStack{
+            
                 Text("Start")
                     .font(.system(size: 48))
                     .fontWeight(.bold)
                     .foregroundColor(Color.black)
                     .bold()
-                Text("Choose the mod of the game")
+                Text("Choose the game mod")
                     .padding(.top, 1.0)
                 
                 
@@ -60,12 +56,13 @@ struct StartPage: View {
                     NavigationLink(
                         destination: SoloGame(),
                         label: {
-                            Image("individual")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 160, height: 360, alignment: .center)
-                        }
+                                Image("individual")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 160, height: 360, alignment: .center)
+                            }
                     )
+                    
                     
                     
                     NavigationLink(
@@ -78,24 +75,26 @@ struct StartPage: View {
                         }
                     )
                 }
-            
                 
                 
-                Link("Wath the video", destination: URL(string: "https://www.example.com")!)
-                    .padding(.top, 1.0)
-                    .environment(\.openURL, OpenURLAction { url in
-                        print("Open \(url)")
-                        return .handled
-                    })
-                    .accentColor(/*@START_MENU_TOKEN@*/.black/*@END_MENU_TOKEN@*/)
+                NavigationLink(
+                    destination: InfoPageRus(),
+                    label: {
+                        Text("Whath the video")
+                            .padding(.top, 1.0)
+                            .accentColor(/*@START_MENU_TOKEN@*/.black/*@END_MENU_TOKEN@*/)
+                    }
+                )
                 
-                Link("Why it's important walk properly?", destination: URL(string: "https://www.example.com")!)
-                    .padding(.top, 1.0)
-                    .environment(\.openURL, OpenURLAction { url in
-                        print("Open \(url)")
-                        return .handled
-                    })
-                    .accentColor(/*@START_MENU_TOKEN@*/.black/*@END_MENU_TOKEN@*/)
+                
+                NavigationLink(
+                    destination: InfoPage(),
+                    label: {
+                        Text("Why it's important walk properly?")
+                            .padding(.top, 1.0)
+                            .accentColor(/*@START_MENU_TOKEN@*/.black/*@END_MENU_TOKEN@*/)
+                    }
+                )
                 
                 
             }
@@ -108,22 +107,14 @@ struct StartPage: View {
 
 
 
-
-struct ContinueButton: View {
-    var body: some View {
-        Image("dual")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 160, height: 360, alignment: .center)
-    }
-}
-
 struct FirstPage_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             StartPage()
             SoloGame()
             DuoGame()
+            InfoPage()
+            InfoPageRus()
                 .previewInterfaceOrientation(.portrait)
         }
     }

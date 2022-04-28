@@ -13,14 +13,23 @@ struct AccelerometerViewSolo: View {
     let screenHeight = UIScreen.screenHeight
     let screenWidth = UIScreen.screenWidth
     
+    @Environment(\.presentationMode) private var presentationMode
+    
     //Состояние записи работы акселерометра и гироскопа
-    @State private var motionsRecording: Bool = true
+    @State private var motionsRecording: Bool = false
     @State private var alertStatus: Bool = false
     
-    @State private var pourBeer:Bool = false
+    @State private var rules: Bool = true
+    @State private var pouring:Bool = false
+    @State private var countdown:Bool = false
+    @State private var countdownValue:Double = 3.5
+    @State private var gameTimer:Int = 0
+    @State private var running: Bool = false
+    @State private var finish: Bool = false
+    
     @State private var pourOut:Bool = false
+    @State private var missedBeer:Double = 1000
 
-    @State private var missedBeer:Double = 0
     @State private var missedFoam:Double = 0 //позже добавлю
     @State private var foamHeight:Double = 50
     @State private var beerHeight:Double = 0
@@ -63,13 +72,23 @@ struct AccelerometerViewSolo: View {
     
     let motion = CMMotionManager()
     let queue = OperationQueue()
-    let noBeerY:Double = 0
+    let noBeerY:Double = 20
     let deadValue:Double = 0
     let updateFrequency:Double = 0.02
     let timer = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
     let waterDelay = 6
 
     func MyMotion(){
+        
+        if(self.countdown){
+            self.countdownValue -= 0.02
+            
+            if(self.countdownValue <= 0.5){
+                self.countdown = false
+                self.running = true
+            }
+        }
+        
         self.beerOpacity = 150/(abs(accelY) + (missedBeer/10))
         
         self.bubblesHeight = (leftBeerY > rightBeerY ? leftBeerY : rightBeerY)
@@ -166,9 +185,17 @@ struct AccelerometerViewSolo: View {
             
         }
         
-        self.leftBeerY = accelX + noBeerY + missedBeer + accelY
-        self.centerBeerY = (abs(gyroZ)/4) + abs(accelX/2) + noBeerY + missedBeer + accelY
-        self.rightBeerY = -accelX  + noBeerY + missedBeer + accelY
+        if(pouring){
+            self.leftBeerY = missedBeer + noBeerY
+            self.centerBeerY = missedBeer + noBeerY
+            self.rightBeerY = missedBeer + noBeerY
+        }else{
+            self.leftBeerY = accelX + noBeerY + missedBeer + accelY
+            self.centerBeerY = (abs(gyroZ)/6) + abs(accelX ) + noBeerY + missedBeer + accelY
+            self.rightBeerY = -accelX  + noBeerY + missedBeer + accelY
+        }
+        
+        
         
         self.foamHeight = 40 - (missedBeer/15)
 
@@ -177,28 +204,61 @@ struct AccelerometerViewSolo: View {
             self.pourOut = missedBeer > 250 ? false : true
         }
         
-        if(missedBeer > 250 - deadValue || accelY < -195){
-            if(missedBeer < 1000 && !pourBeer){
-                self.missedBeer += 10 + gyroZ/20
+        if(!pouring){
+            if(missedBeer > 250 - deadValue || (accelY < -195) ){
+                if(missedBeer < 1000 ){
+                    self.missedBeer += 10 + gyroZ/20
+                }
+                if(missedBeer>500){
+                    finishGame()
+                }
             }
-            self.alertStatus = true
         }
 
         if(leftBeerY < 0 || rightBeerY < 0){
             missedBeer += 0.03 * (abs(accelY * 3) + abs(accelX))
         }
         
-        if(pourBeer){
-            missedBeer -= 3
+        if(pouring){
+            missedBeer -= 2
+            
             if(missedBeer < 1){
                 self.alertStatus = false
-                self.pourBeer = false
+                self.pouring = false
             }
         }
 
 
-       
+        
     }
+    
+    
+    func startGame(){
+        motionsRecording = true
+        self.rules = false
+        self.finish = false
+        self.pouring = true
+        self.countdown = true
+        self.countdownValue = 3.5
+        self.missedBeer = 300
+    }
+    
+    
+    func finishGame(){
+        motionsRecording = false
+        self.finish = true
+        self.rules = false
+        self.running = false
+        self.pouring = false
+        self.countdown = false
+    }
+    
+    func goToMainMenu(){
+        presentationMode.wrappedValue.dismiss()
+    }
+  
+
+    
   
 var body: some View {
    VStack {
@@ -242,26 +302,112 @@ var body: some View {
                        Button("YES!", role: .cancel) {
                            self.missedBeer = 300
                            self.alertStatus = false
-                           self.pourBeer = true
+                           self.pouring = true
                        }
 
                    }
                
                Image("BeerGlass").resizable().frame(width: 400, height: 420)
                
-               VStack{
-                   if(pourBeer){
+               
+               ZStack{
+                   if(running){
+                       Image("RUN").offset(y: -250)
+                       
+                       Button(action: finishGame){
+                           Image("finish")
+                       }.offset(y:250)
+                   }
+                   
+                   if(pouring){
                        Text("Pouring" + self.dots).font(.title).fontWeight(.semibold).padding(.vertical, 20)
+                           .offset(y:-180)
                    }else{
                        Text("\(self.missedBeer < 250 ? Int((1-(self.missedBeer/250))*100) :0)%")
                            .font(.largeTitle)
                            .fontWeight(.semibold)
-                       
+                           .offset(y:-180)
                    }
+                   
                }.padding(.vertical,20)
-           }.frame(width: screenWidth, height: screenHeight, alignment: .center)
            
+               
            
+               if(rules){ //ПРАВИЛА
+                   ZStack(){
+                       VStack(){
+                           Text("What should I do?").foregroundColor(Color.black)
+                               .font(.system(size: 32))
+                           Text("As soon as the mug is full of beer - RUN!Try not to spill the beer!The smother you move the better!").foregroundColor(Color.black)
+                               .font(.system(size: 16))
+                               .multilineTextAlignment(.center)
+                               .frame(width: screenWidth-40).padding(.vertical, 10)
+                           Button(action: startGame){
+                               Image("start")
+                           }
+
+                       }.frame(width: screenWidth-20, height: 335, alignment: .center)
+                           .background(Color(UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 0.90))).cornerRadius(20)
+                   }.frame(width:  screenWidth, height: screenHeight).background(Color(UIColor(red: 0.07, green: 0.07, blue: 0.07, alpha: 0.30)))
+               }
+               
+               
+               if(pouring && !running){
+                   ZStack(){
+                       Text("\(countdownValue, specifier: "%.0f")")
+                           .font(.system(size: 60))
+                           .fontWeight(.bold)
+                           .offset(y:-250)
+                   }
+               }
+               
+               if(finish){ //Финиш
+                   ZStack(){
+                       VStack(){
+                           if(Int((1-(self.missedBeer/250))*100) >= 80){
+                               Text("Wow!").foregroundColor(Color.black)
+                                   .font(.system(size: 32))
+                               Text("You have 80% of beer left! Your’re better than 80% of people in the world!!").foregroundColor(Color.black)
+                                   .font(.system(size: 16))
+                                   .multilineTextAlignment(.center)
+                                   .frame(width: screenWidth-40).padding(.vertical, 10)
+                           }
+                           if(Int((1-(self.missedBeer/250))*100) >= 50 &&
+                              Int((1-(self.missedBeer/250))*100) < 80){
+                               Text("Yeah!").foregroundColor(Color.black)
+                                   .font(.system(size: 32))
+                               Text("You’re almost there! Try harder and you’ll break the record!").foregroundColor(Color.black)
+                                   .font(.system(size: 16))
+                                   .multilineTextAlignment(.center)
+                                   .frame(width: screenWidth-40).padding(.vertical, 10)
+                           }
+                           if(Int((1-(self.missedBeer/250))*100) < 50){
+                               Text("Fuh!").foregroundColor(Color.black)
+                                   .font(.system(size: 32))
+                               Text("That was hard but you can do it better! Try again!").foregroundColor(Color.black)
+                                   .font(.system(size: 16))
+                                   .multilineTextAlignment(.center)
+                                   .frame(width: screenWidth-40).padding(.vertical, 10)
+                           }
+                           
+                           
+                           Button(action: startGame){
+                               Image("tryAgain")
+                               
+                           }
+                           Button(action: goToMainMenu){
+                               Text("Main menu").foregroundColor(Color(UIColor(red: 0.35, green: 0.46, blue: 0.98, alpha: 1.00)))
+                           }
+                           
+                       }.frame(width: screenWidth-20, height: 335, alignment: .center)
+                           .background(Color(UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 0.90))).cornerRadius(20)
+                   }.frame(width:  screenWidth, height: screenHeight).background(Color(UIColor(red: 0.07, green: 0.07, blue: 0.07, alpha: 0.30)
+                                                                            
+))
+               }
+           }.offset(y:-30).frame(width: screenWidth, height: screenHeight, alignment: .center)
+           
+       
        
    }.frame(width: screenWidth, height: screenHeight, alignment: .center).background(Color.white).onReceive(timer){_ in
         if motionsRecording {
