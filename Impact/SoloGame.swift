@@ -8,21 +8,52 @@
 import SwiftUI
 import CoreMotion
 import CoreGraphics
+import Subsonic
 
 struct AccelerometerViewSolo: View {
     let screenHeight = UIScreen.screenHeight
     let screenWidth = UIScreen.screenWidth
     
     @Environment(\.presentationMode) private var presentationMode
-
+    
+    
+    
+    @State private var bpm: Double = 256
+    @State private var runOpaciryDown: Bool = false
+    @State private var runOpaciryUp: Bool = false
+    @State private var runOpacity: Double = 0
+    @State private var gameTimer: Double = 0
+    @State private var timerColor = Color.black
+    
+    //SOUNDS
+    @State private var music: Bool = true
+    @State private var playMusic: Bool = false
+    @StateObject private var startSound = SubsonicPlayer(sound: "gameStart.mp3")
+    @StateObject private var boublesSound = SubsonicPlayer(sound: "bubbles.mp3")
+    @StateObject private var pouringSound = SubsonicPlayer(sound: "bestPouring.mp3")
+    @StateObject private var bulbSound = SubsonicPlayer(sound: "bulb.mp3")
+    @StateObject private var missSound = SubsonicPlayer(sound: "beerMiss.mp3")
+    //
+    
+    
     //Состояние записи работы акселерометра и гироскопа
-    @State private var motionsRecording: Bool = true
+    @State private var motionsRecording: Bool = false
     @State private var alertStatus: Bool = false
     
-    @State private var pourBeer:Bool = false
+    @State private var rules: Bool = true
+    @State private var pouring:Bool = false
+    @State private var countdown:Bool = false
+    @State private var countdownValue:Double = 3.5
+    @State private var countdownTimer:Int = 0
+    @State private var running: Bool = false
+    @State private var finish: Bool = false
+    
+    @State private var pourValue:Double = 0.5 //время разливания пива
+    @State private var pouringOut:Bool = false
     @State private var pourOut:Bool = false
+    @State private var missedBeer:Int = 0
+    @State private var missedBeerValue:Double = 1000
 
-    @State private var missedBeer:Double = 0
     @State private var missedFoam:Double = 0 //позже добавлю
     @State private var foamHeight:Double = 50
     @State private var beerHeight:Double = 0
@@ -65,14 +96,41 @@ struct AccelerometerViewSolo: View {
     
     let motion = CMMotionManager()
     let queue = OperationQueue()
-    let noBeerY:Double = 0
+    let noBeerY:Double = 20
     let deadValue:Double = 0
     let updateFrequency:Double = 0.02
     let timer = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
-    let waterDelay = 6
+    let waterDelay = 5
 
     func MyMotion(){
-        self.beerOpacity = 150/(abs(accelY) + (missedBeer/10))
+        print("\(runOpacity)")
+        
+        if(pourValue <= 0){
+            pouringOut = false
+            pourValue = 0.5
+        }
+        
+        if(pouringOut){
+            self.pourValue -= 0.02
+        }
+        
+        
+        self.missedBeer = self.missedBeerValue < 250 ? Int((1-(self.missedBeerValue/250))*100) : 0
+        
+        if(self.countdown){
+            self.countdownValue -= 0.02
+            
+            if(self.countdownValue <= 0.5){
+                self.countdown = false
+                self.running = true
+                
+                if(music){
+                    self.playMusic = true
+                }
+            }
+        }
+        
+        self.beerOpacity = 140/(abs(accelY) + (Double(missedBeer)))
         
         self.bubblesHeight = (leftBeerY > rightBeerY ? leftBeerY : rightBeerY)
         self.bubblesWidth = 185
@@ -168,39 +226,135 @@ struct AccelerometerViewSolo: View {
             
         }
         
-        self.leftBeerY = accelX + noBeerY + missedBeer + accelY
-        self.centerBeerY = (abs(gyroZ)/4) + abs(accelX/2) + noBeerY + missedBeer + accelY
-        self.rightBeerY = -accelX  + noBeerY + missedBeer + accelY
-        
-        self.foamHeight = 40 - (missedBeer/15)
-
-        if(pourOut){
-            self.missedBeer += 50
-            self.pourOut = missedBeer > 250 ? false : true
+        if(pouring){
+            self.leftBeerY = missedBeerValue + noBeerY
+            self.centerBeerY = missedBeerValue + noBeerY
+            self.rightBeerY = missedBeerValue + noBeerY
+            self.beerOpacity = 1
+        }else{
+            self.leftBeerY = accelX + noBeerY + missedBeerValue + accelY
+            self.centerBeerY = (abs(gyroZ)/6) + abs(accelX ) + noBeerY + missedBeerValue + accelY
+            self.rightBeerY = -accelX  + noBeerY + missedBeerValue + accelY
         }
         
-        if(missedBeer > 250 - deadValue || accelY < -195){
-            if(missedBeer < 1000 && !pourBeer){
-                self.missedBeer += 10 + gyroZ/20
+        
+        
+        self.foamHeight = 40 - (missedBeerValue/15)
+
+        if(pourOut){
+            self.missedBeerValue += 50
+            self.pourOut = missedBeerValue > 250 ? false : true
+        }
+        
+        if(!pouring){
+            if(missedBeerValue > 250 - deadValue || (accelY < -195) ){
+                if(missedBeerValue < 1000 ){
+                    self.missedBeerValue += 10 + gyroZ/20
+                   
+                }
+                if(missedBeerValue > 250 && !pouringOut){
+                    finishGame()
+                }
             }
-            self.alertStatus = true
         }
 
         if(leftBeerY < 0 || rightBeerY < 0){
-            missedBeer += 0.03 * (abs(accelY * 3) + abs(accelX))
+            missedBeerValue += 0.03 * (abs(accelY * 3) + abs(accelX))
+            missSound.play()
+            if(!pouringOut){
+                self.pouringOut = true
+            }
         }
         
-        if(pourBeer){
-            missedBeer -= 3
-            if(missedBeer < 1){
+        if(pouring){
+            missedBeerValue -= 2
+            
+            if(missedBeerValue < 1){
                 self.alertStatus = false
-                self.pourBeer = false
+                self.pouring = false
             }
         }
 
-
-       
+        if(running){
+            if(gameTimer > 0.5){
+                self.gameTimer -= 0.02
+                if(gameTimer < 10){
+                    if(gameTimer < 5){
+                        timerColor = Color.red
+                    }else{
+                        timerColor = Color.orange
+                    }
+                }else{
+                    timerColor = Color.black
+                }
+            }else{
+                finishGame()
+            }
+            
+            if(self.runOpacity >= 1){
+                self.runOpaciryUp = false
+                self.runOpaciryDown = true
+                runOpacity -= (bpm/60)/50
+            }
+            if(self.runOpacity <= 0){
+                self.runOpaciryDown = false
+                self.runOpaciryUp = true
+                
+                self.runOpacity += (bpm/60)/50
+            }
+            
+            if(self.runOpaciryUp){
+                self.runOpacity += (bpm/60)/50
+            }
+            
+            if(self.runOpaciryDown){
+                self.runOpacity -= (bpm/60)/50
+            }
+        }
+        
     }
+    
+    
+    func startGame(){
+        motionsRecording = true
+        self.rules = false
+        self.finish = false
+        self.pouring = true
+        self.countdown = true
+        self.countdownValue = 3.5
+        self.missedBeerValue = 300
+        self.gameTimer = 45
+        
+        startSound.play()
+        pouringSound.play()
+        bulbSound.play()
+        boublesSound.play()
+    }
+    
+    
+    func finishGame(failed: Bool? = nil){
+            
+        motionsRecording = false
+        self.finish = true
+        self.rules = false
+        self.running = false
+        self.pouring = false
+        self.countdown = false
+        self.countdownTimer = 0
+        self.pouringOut = false
+        
+        self.playMusic = false
+        pouringSound.stop()
+        bulbSound.stop()
+        boublesSound.stop()
+    }
+    
+    func goToMainMenu(){
+        presentationMode.wrappedValue.dismiss()
+    }
+
+    
+    
   
 var body: some View {
    VStack {
@@ -212,7 +366,7 @@ var body: some View {
                            path.addQuadCurve(to: CGPoint(x: 185, y: rightBeerY), control: CGPoint(x: 120 - (gyroZ/10), y: centerBeerY))
                           path.addLine(to: CGPoint(x:185, y: leftBottomY))
                            path.addLine(to: CGPoint(x:0, y: rightBottomY))
-                       }.fill(LinearGradient(colors: [Color(UIColor(red: 0.84, green: 0.47, blue: 0.00,alpha: beerOpacity)),Color(UIColor(red: 1.00, green: 0.73, blue: 0.00, alpha: beerOpacity/1.5))], startPoint: .top, endPoint: .bottom))
+                       }.fill(LinearGradient(colors: [Color(UIColor(red: 0.84, green: 0.47, blue: 0.00,alpha: beerOpacity)),Color(UIColor(red: 1.00, green: 0.73, blue: 0.00, alpha: beerOpacity))], startPoint: .top, endPoint: .bottom))
                    }
 
                    Path() { path in //верх
@@ -238,32 +392,131 @@ var body: some View {
                        path.closeSubpath()
                    }.fill(Color.white)
                    
-               }.frame(width: 187, height:255, alignment: .center)
+               }
+                    .frame(width: 187, height:255, alignment: .center)
+                    .sound("pouringOut.mp3", isPlaying: $pouringOut)
                
                    .alert("Pour some more?", isPresented: $alertStatus) {
                        Button("YES!", role: .cancel) {
-                           self.missedBeer = 300
+                           self.missedBeerValue = 300
                            self.alertStatus = false
-                           self.pourBeer = true
+                           self.pouring = true
                        }
 
                    }
                
                Image("BeerGlass").resizable().frame(width: 400, height: 420)
                
-               VStack{
-                   if(pourBeer){
+               
+               ZStack{
+                   if(running){
+                       Image("RUN").offset(y: -250).opacity(runOpacity)
+                       
+                       Text("\(gameTimer, specifier: "%.0f")s")
+                           .font(.title)
+                           .fontWeight(.semibold)
+                           .offset(y:180)
+                           .foregroundColor(timerColor)
+                       
+                       Button(action: {
+                           finishGame(failed: true)
+                       } ){
+                           
+                           Image("finish")
+                       }.offset(y:250)
+                   }
+                   
+                   if(pouring){
                        Text("Pouring" + self.dots).font(.title).fontWeight(.semibold).padding(.vertical, 20)
+                           .offset(y:-180)
                    }else{
-                       Text("\(self.missedBeer < 250 ? Int((1-(self.missedBeer/250))*100) :0)%")
+                       Text("\(missedBeer)%")
                            .font(.largeTitle)
                            .fontWeight(.semibold)
-                       
+                           .offset(y:-180)
                    }
+                   
                }.padding(.vertical,20)
-           }.frame(width: screenWidth, height: screenHeight, alignment: .center)
+                   .sound("running45s.mp3", isPlaying: $playMusic, volume: 1)
            
+               
            
+               if(rules){ //ПРАВИЛА
+                   ZStack(){
+                       VStack(){
+                           Text("What should I do?").foregroundColor(Color.black)
+                               .font(.system(size: 32))
+                           Text("As soon as the mug is full of beer - RUN!Try not to spill the beer! The smother you move the better!").foregroundColor(Color.black)
+                               .font(.system(size: 16))
+                               .multilineTextAlignment(.center)
+                               .frame(width: screenWidth-40).padding(.vertical, 10)
+                           Button(action: startGame){
+                               Image("start")
+                           }
+
+                       }.frame(width: screenWidth-20, height: 335, alignment: .center)
+                           .background(Color(UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 0.90))).cornerRadius(20)
+                   }.frame(width:  screenWidth, height: screenHeight).background(Color(UIColor(red: 0.07, green: 0.07, blue: 0.07, alpha: 0.30)))
+               }
+               
+               
+               if(pouring && !running){
+                   ZStack(){
+                       Text("\(countdownValue, specifier: "%.0f")")
+                           .font(.system(size: 60))
+                           .fontWeight(.bold)
+                           .offset(y:-250)
+                   }
+               }
+               
+               if(finish){ //Финиш
+                   ZStack(){
+                       VStack(){
+                           if(missedBeer >= 80){
+                               Text("Wow!").foregroundColor(Color.black)
+                                   .font(.system(size: 32))
+                               Text("You have \(missedBeer)% of beer left! Your’re better than \(missedBeer)% of people in the world!!").foregroundColor(Color.black)
+                                   .font(.system(size: 16))
+                                   .multilineTextAlignment(.center)
+                                   .frame(width: screenWidth-40).padding(.vertical, 10)
+                           }
+                           if(missedBeer >= 50 && missedBeer < 80){
+                               Text("Yeah!").foregroundColor(Color.black)
+                                   .font(.system(size: 32))
+                               Text("You’re almost there! Try harder and you’ll break the record!").foregroundColor(Color.black)
+                                   .font(.system(size: 16))
+                                   .multilineTextAlignment(.center)
+                                   .frame(width: screenWidth-40).padding(.vertical, 10)
+                           }
+                           if(missedBeer < 50){
+                               Text("Fuh!").foregroundColor(Color.black)
+                                   .font(.system(size: 32))
+                               Text("That was hard but you can do it better! Try again!").foregroundColor(Color.black)
+                                   .font(.system(size: 16))
+                                   .multilineTextAlignment(.center)
+                                   .frame(width: screenWidth-40).padding(.vertical, 10)
+                           }
+                           
+                           
+                           Button(action: startGame){
+                               Image("tryAgain")
+                               
+                           }
+                           
+                           
+                           Button(action: goToMainMenu){
+                               Text("Main menu").foregroundColor(Color(UIColor(red: 0.35, green: 0.46, blue: 0.98, alpha: 1.00)))
+                           }
+                           
+                       }.frame(width: screenWidth-20, height: 335, alignment: .center)
+                           .background(Color(UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 0.90))).cornerRadius(20)
+                   }.frame(width:  screenWidth, height: screenHeight).background(Color(UIColor(red: 0.07, green: 0.07, blue: 0.07, alpha: 0.30)
+                                                                            
+))
+               }
+           }.offset(y:-30).frame(width: screenWidth, height: screenHeight, alignment: .center)
+           
+       
        
    }.frame(width: screenWidth, height: screenHeight, alignment: .center).background(Color.white).onReceive(timer){_ in
         if motionsRecording {
